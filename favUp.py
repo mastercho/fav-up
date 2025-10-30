@@ -89,10 +89,6 @@ class FavUp(object):
                     "type": self.output.split(".")[1],
                     "file": open(self.output, "w")
                 }
-
-            if self.output:
-                self._output["file"].close()
-
     
     def _argsCheck(self, args):
         if not (args.key_file or args.key or args.shodan_cli):
@@ -238,15 +234,22 @@ class FavUp(object):
                 _tcObj = _cObj
                 _tcObj.update(_fObject)
                 _t = self._output["type"]
+            
                 if _t.lower() == "csv":
-                    self._output["file"].write(",".join(str(_tcObj[k]) for k in _tcObj)+"\n")
+                    self._output["file"].write(",".join(str(_tcObj[k]) for k in _tcObj) + "\n")
+            
                 elif _t.lower() == "json":
-                    self._output["file"].write(json.dumps(_tcObj)+"\n")
+                    if self._output.get("file") and not self._output["file"].closed:
+                        self._output["file"].write(json.dumps(_tcObj) + "\n")
+                    else:
+                        print("[!] Output file is closed — skipping write.")
+            
                 else:
                     self._iterator.write("[x] Output format not supported, closing.")
                     exit(1)
-        self._iterator.close()
-    
+                if self.output and self._output.get("file") and not self._output["file"].closed:
+                    self._output["file"].close()    
+            self._iterator.close()
     def faviconHash(self, data, web_source=None):
         if web_source:
             b64data = base64.encodebytes(data).decode()
